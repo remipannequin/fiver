@@ -46,7 +46,7 @@ class NextPiecesGenerator:
 
 class Piece:
 
-    def __init__(self, id):
+    def __init__(self, new_id):
         """Create a new Piece with id.
         
         >>> p = Piece(1)
@@ -54,7 +54,7 @@ class Piece:
         1
         
         """
-        self.id = id
+        self.id = new_id
 
 
     def __eq__ (self, piece):

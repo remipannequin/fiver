@@ -17,7 +17,7 @@ class StatusMessage(Enum):
     NONE = 4
 
 
-class Game :
+class Game:
 
     N_TYPES = 7
     N_MATCH = 5
@@ -309,8 +309,9 @@ class Helper:
                                     same += 1
                             else:
                                 free += 1
-                        if 2*same + free >= 4:
-                            v += math.pow(2*same + free - 4, 2)*100 + free
+                        diff = 4 - same - free
+                        if same >= diff:
+                            v += math.pow(same - diff + 1, 2)*10 + free
                     result[r][c][t] = v
         self.cache = result
 
