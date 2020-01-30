@@ -92,6 +92,17 @@ def heuristic_player(g, h, log=False):
     return g.score
 
 
+def step(g):
+    hp = Helper(g)
+    act = hp.actions()
+    #search best action
+    hp.build_eval_cache()
+    (src, dst) = heuristic_2(hp, act)
+    #apply action
+    g.make_move(src.row, src.col, dst.row, dst.col)
+    
+    
+
 if __name__=='__main__':
     import matplotlib
     import numpy as np
@@ -99,7 +110,7 @@ if __name__=='__main__':
     import scipy.io
     
     scores = []
-    for i in range(100):
+    for i in range(1000):
         g = Game()
         scores.append(heuristic_player(g, heuristic_2, False))
         print('game %s' % i)
@@ -107,10 +118,10 @@ if __name__=='__main__':
     print("moyenne:")
     print(sum(scores)/len(scores))    
     
-    if path.isfile('heuristic.mat'):
-        mat = scipy.io.loadmat('heuristic.mat')
-        scores = mat['score'].tolist()[0] + scores
-    scipy.io.savemat('heuristic.mat', {'score':scores})
+    #if path.isfile('heuristic.mat'):
+    #    mat = scipy.io.loadmat('heuristic.mat')
+    #    scores = mat['score'].tolist()[0] + scores
+    #scipy.io.savemat('heuristic.mat', {'score':scores})
     
     
     

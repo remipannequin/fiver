@@ -78,6 +78,9 @@ class Piece:
         return hash(self.id)
 
 
+    def __repr__(self):
+        return "Piece %d" %self.id
+
 if __name__=='__main__':
     import doctest
     doctest.testmod()
