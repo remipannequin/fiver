@@ -24,7 +24,7 @@ class Board:
 
 
     def print(self):
-        """Pretty print a row of te board
+        """Pretty print a row of the board
         
         >>> b = Board(7, 9)
         >>> b.print()
@@ -160,8 +160,19 @@ class Board:
         >>> b.find_path(0, 0, 5, 2)
         []
         
+        >>> b = Board(3, 5)
+        >>> b.set_piece(0, 3, Piece(1))
+        >>> b.set_piece(2, 3, Piece(1))
+        >>> b.find_path(1, 0, 1, 4)
+        [Cell(1, 1), Cell(1, 2), Cell(1, 3), Cell(1, 4)]
+        >>> b.set_piece(1, 3, Piece(1))
+        >>> b.find_path(0, 0, 2, 2)
+        [Cell(0, 1), Cell(0, 2), Cell(1, 2), Cell(2, 2)]
+        >>> b.find_path(0, 0, 2, 4)
+        []
+        
         """
-
+        self._reset_path_search()
         src = self.grid[start_row][start_col]
         dst = self.grid[end_row][end_col]
         closed = list()
@@ -212,15 +223,10 @@ class Board:
 
 
     def _reset_path_search (self):
-        if self.path:
-            self.path.clear()
-        else:
-            self.path = list()
-
-        for row in grid:
+        for row in self.grid:
             for cell in row:
-                cell.parent = null
-                cell.cost = int.MAX
+                cell.parent = None
+                cell.cost = float('+Inf')
                 
                 
     def best_candidate (neighbours, current_cost, end):

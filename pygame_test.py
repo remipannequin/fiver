@@ -115,7 +115,9 @@ while loop:
                 else:
                     print ("case sans piece")
                     if rectangle_blanc is True :
-                        
+                        chemin = g.board.find_path(numero_case_y2, numero_case_x2,numero_case_y, numero_case_x)
+                        if len(chemin) == 0:
+                            print("interdit !!!")
                         g.make_move(numero_case_y2, numero_case_x2,numero_case_y, numero_case_x)
                     rectangle_blanc = False
             elif rect_green.collidepoint(event.pos):
@@ -135,4 +137,4 @@ while loop:
     pygame.display.flip() 
     # 10 fps
     clock.tick(10)
-print("end")
+
