@@ -1,5 +1,18 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""Board and Cells of the board
+"""
+
 from enum import Enum, auto
 
+
+__author__="Rémi Pannequin"
+__copyright__ = "Copyright 2020"
+__credits__ = ["Rémi Pannequin"]
+__license__ = "GPL"
+__maintainer__ = "Rémi Pannequin"
+__email__ = "remi.pannequin@gmail.com"
+__status__ = "Development"
 
 class Board:
 

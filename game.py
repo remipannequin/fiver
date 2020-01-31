@@ -1,8 +1,25 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""The main game logic for the five-or-more game
+"""
+
 from random import randrange, choice
 from enum import Enum
+import math
+
 from piecegenerator import NextPiecesGenerator
 from board import Board, Direction
-import math
+
+__author__="Rémi Pannequin"
+__copyright__ = "Copyright 2020"
+__credits__ = ["Rémi Pannequin"]
+__license__ = "GPL"
+__maintainer__ = "Rémi Pannequin"
+__email__ = "remi.pannequin@gmail.com"
+__status__ = "Development"
+
+
+
 
 class BoardSize(Enum):
     SMALL = 1
@@ -57,10 +74,7 @@ class Game:
 
 
     def fill_board (self):
-        """
-        
-        
-        
+        """remove complete lines, and add next_pieces on the board.
         """
         for piece in self.next_pieces_queue:
             c = choice(self.board.free_cells())
