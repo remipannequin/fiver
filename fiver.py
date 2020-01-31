@@ -1,8 +1,10 @@
-# code from:
-# https://wiki.labomedia.org/index.php/Pygame:_des_exemples_pour_débuter.html
-
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""Interactive interface for the game and automatic player agent
+"""
 
 import pygame
+
 from game import Game, Helper
 from player import step
 
