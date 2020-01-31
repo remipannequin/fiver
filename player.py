@@ -66,8 +66,20 @@ def heuristic_2(hp, act):
     return (best_src, best_dst)
 
 
-
-
+def best_destination(hp, act):
+    """Search the best destination.
+    Return a tupple (row, col, type)"""
+    best = None
+    for dst in act.keys():
+        for src in act[dst]:
+            eval_dst = hp.eval_move(src.piece, dst.row, dst.col)
+            if best is None or best < eval_dst:
+                best = eval_dst
+                best_dst = dst
+                t = src.piece.id
+                
+    return (best_dst.row, best_dst.col, t)
+    
 
 def heuristic_player(g, h, log=False):
     hp = Helper(g)
