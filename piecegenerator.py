@@ -46,53 +46,15 @@ class NextPiecesGenerator:
         3
         >>> l[0] == g.pieces[0] and l[1] == g.pieces[1] and l[2] == g.pieces[2]
         True
-        >>> [p.id >= 0 and p.id < 5 for p in g.pieces]
+        >>> [p >= 0 and p < 5 for p in g.pieces]
         [True, True, True]
         """
         self.pieces.clear ()
         for i in range(self.n_next_pieces):
             id = self._yield_next_piece ()
-            self.pieces.append(Piece (id))
+            self.pieces.append(id)
         return self.pieces
 
-
-
-class Piece:
-
-    def __init__(self, new_id):
-        """Create a new Piece with id.
-        
-        >>> p = Piece(1)
-        >>> p.id
-        1
-        
-        """
-        self.id = new_id
-
-
-    def __eq__ (self, piece):
-        """Test whether two pieces are the same, i.e. they have the same id
-        
-        >>> Piece(1) == Piece(1)
-        True
-        
-        >>> Piece(1) == Piece(2)
-        False
-        
-        >>> Piece(1) == None
-        False
-        
-        """
-        if piece:
-            return self.id == piece.id
-        return False
-
-    def __hash__(self):
-        return hash(self.id)
-
-
-    def __repr__(self):
-        return "Piece %d" %self.id
 
 if __name__=='__main__':
     import doctest

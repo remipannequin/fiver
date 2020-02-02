@@ -67,7 +67,10 @@ class Game:
         self.board = Board (self.n_rows, self.n_cols)
         self.fill_board ()
         self.generate_next_pieces ()
-        
+        self.trace = []
+        self.last_move = None
+        self.record_trace()
+
 
     def generate_next_pieces(self):
         self.next_pieces_queue = self.next_pieces_generator.yield_next_pieces ()
@@ -105,6 +108,7 @@ class Game:
 
 
     def next_step (self):
+        self.record_trace()
         self.fill_board ()
         self.generate_next_pieces ()
 
@@ -118,7 +122,7 @@ class Game:
         #if current_path is None or len(current_path) == 0:
         #    status_message = NO_PATH
         #    return false
-        
+        self.last_move = (start_row, start_col, end_row, end_col)
         p = self.board.get_piece(start_row, start_col)
         self.board.set_piece (start_row, start_col, None)
         self.board.set_piece (end_row, end_col, p)
@@ -132,6 +136,13 @@ class Game:
             self.next_step()
 
 
+    def record_trace(self):
+        """Add current state (board, next_pieces, move, score) to the trace"""
+        
+        board_data = [c.piece for c in self.board.all_cells()]
+        self.trace.append((board_data, self.next_pieces_queue, self.last_move, self.score))
+    
+        
 class Helper:
 
     def __init__(self, game):
@@ -166,6 +177,7 @@ class Helper:
         """
         self.board = game.board
         self.n_types = game.n_types
+        self.cache = None
         result = list()
         #prepare evalutation neighbourhood
         for r in range(game.n_rows):
@@ -209,8 +221,8 @@ class Helper:
         possible source cells
         
         >>> g = MockGame(3,5)
-        >>> g.board.set_piece(0, 2, Piece(1))
-        >>> g.board.set_piece(1, 2, Piece(2))
+        >>> g.board.set_piece(0, 2, 1)
+        >>> g.board.set_piece(1, 2, 2)
         >>> hp = Helper(g)
         >>> act = hp.actions()
         >>> len(act)
@@ -223,9 +235,9 @@ class Helper:
         True
         >>> g.board.get_cell(1,2) in act[g.board.get_cell(0,0)]
         True
-        >>> g.board.set_piece(0, 3, Piece(3))
-        >>> g.board.set_piece(2, 2, Piece(3))
-        >>> g.board.set_piece(2, 3, Piece(2))
+        >>> g.board.set_piece(0, 3, 3)
+        >>> g.board.set_piece(2, 2, 3)
+        >>> g.board.set_piece(2, 3, 2)
         >>> act = hp.actions()
         >>> len(act)
         10
@@ -291,7 +303,7 @@ class Helper:
         
         >>> g = MockGame()
         >>> hp = Helper(g)
-        >>> g.board.set_piece(0, 0, Piece(1))
+        >>> g.board.set_piece(0, 0, 1)
         >>> g.board.print()
         |1| | | | | | |
         | | | | | | | |
@@ -319,7 +331,7 @@ class Helper:
                         free = 0
                         for cell in mask:
                             if cell.piece:
-                                if cell.piece.id == t:
+                                if cell.piece == t:
                                     same += 1
                             else:
                                 free += 1
@@ -336,7 +348,7 @@ class Helper:
         """
         if (self.cache is None):
             self.build_eval_cache()
-        return self.cache[to_row][to_col][piece.id]
+        return self.cache[to_row][to_col][piece]
 
 
     def reachable_cells(self, from_row, from_col):
@@ -354,7 +366,6 @@ class Helper:
 
 if __name__=='__main__':
     import doctest
-    from piecegenerator import Piece
     class MockGame():
         def __init__(self, n_rows=7, n_cols=7):
             self.n_types = 5

@@ -3,6 +3,9 @@
 """Interactive interface for the game and automatic player agent
 """
 
+import shelve
+from datetime import datetime
+
 import pygame
 
 from game import Game, Helper
@@ -59,11 +62,9 @@ class Window:
     def estimate_best_move(self):
         if self.game_over is False :    
             actions = self.hp.actions()
-            #TODO rebuild cache only if game change
-            self.hp.build_eval_cache()
             #Estimate best move (destination)
             (src, dst) = heuristic_2(self.hp, actions)
-            self.proposition = (dst.row, dst.col, src.piece.id)
+            self.proposition = (dst.row, dst.col, src.piece)
 
     def text_centered(self, msg, x, y, big=False):
         if big:
@@ -98,7 +99,7 @@ class Window:
         decalage += int(r*1.5)
         for piece in self.g.next_pieces_queue:
             pygame.draw.circle(self.win, 
-                               COULEUR[piece.id], 
+                               COULEUR[piece], 
                                [decalage, self.pix(self.g.n_rows+1)], 
                                r)
             decalage = decalage + int(2.5 * r)
@@ -124,7 +125,7 @@ class Window:
                               self.l-2*border,
                               self.l-2*border],
                               2*border)
-            
+        
         #draw selection
         if self.selection :
             pygame.draw.rect(self.win,
@@ -137,7 +138,7 @@ class Window:
                 piece = self.g.board.get_piece(row, col)
                 if piece is not None:
                     pygame.draw.circle(self.win, 
-                            COULEUR[piece.id], 
+                            COULEUR[piece], 
                             [self.pix(col+0.5), self.pix(row+0.5)], 
                             rayon_cercle)
         
@@ -145,13 +146,13 @@ class Window:
         if self.game_over:
             self.text_centered("GAME OVER", self.pix(self.g.n_cols/2), self.pix(self.g.n_rows/2), True)
             
-            self.replay = pygame.draw.rect(self.win, 
+            self.replay_bt = pygame.draw.rect(self.win, 
                                            WHITE, 
                                            [self.pix(self.g.n_cols-2.5), 
                                             self.pix(self.g.n_rows+0.5), 
                                             self.l*2.5, 
                                             self.l//2], 2)
-            self.text_centered("play again", self.replay.centerx, self.replay.centery)
+            self.text_centered("play again", self.replay_bt.centerx, self.replay_bt.centery)
 
 
     def process_events(self):
@@ -173,15 +174,18 @@ class Window:
                         if self.selection:
                             chemin = self.g.board.find_path(self.selection[0], self.selection[1], row, col)
                             if len(chemin) == 0:
-                                print("interdit !!!")
+                                print("No path to move here.")
                             else:
                                 self.g.make_move(self.selection[0], self.selection[1], row, col)
+                                #Rebuild cache only if game change
+                                self.hp.build_eval_cache()
                         self.selection = None
-                elif self.replay.collidepoint(event.pos):
+                elif self.replay_bt.collidepoint(event.pos):
                     self.reset()
                 
             elif event.type == pygame.KEYDOWN and event.key == 32 and not self.game_over:
                 step(self.g)
+                self.hp.build_eval_cache()
 
     def loop(self):
         clock = pygame.time.Clock()
@@ -189,7 +193,11 @@ class Window:
             self.estimate_best_move()
             self.draw_game()
             self.process_events()
-            self.game_over = self.g.check_game_over()
+            if not self.game_over and self.g.check_game_over():
+                self.game_over = True
+                with shelve.open('trace.db') as db:
+                    ts = datetime.now()
+                    db[str(ts)] = {'trace': self.g.trace, 'size':(7,7), 'mode':'normal', 'score':self.g.score}
             # Actualisation de l'affichage
             pygame.display.flip() 
             # 10 fps

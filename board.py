@@ -48,7 +48,7 @@ class Board:
         | | | | | | | | | |
         | | | | | | | | | |
         | | | | | | | | | |
-        >>> b.set_piece(3, 7, Piece(2))
+        >>> b.set_piece(3, 7, 2)
         >>> b.print()
         | | | | | | | | | |
         | | | | | | | | | |
@@ -62,7 +62,7 @@ class Board:
             p = []
             for c in row:
                 if c.piece:
-                    p.append("%d"%c.piece.id)
+                    p.append("%d"%c.piece)
                 else:
                     p.append(" ")
             print("|"+"|".join(p)+"|")
@@ -76,9 +76,9 @@ class Board:
         """put a piece at (row, col). This should be empty if piece is not None
         
         >>> b = Board(7, 9)
-        >>> p = Piece(3)
+        >>> p = 3
         >>> b.set_piece(3, 7, p)
-        >>> b.grid[3][7].piece.id
+        >>> b.grid[3][7].piece
         3
         """
         if piece:
@@ -92,8 +92,8 @@ class Board:
         >>> b= Board(5, 5)
         >>> b.get_piece(0, 0) is None
         True
-        >>> b.set_piece(0,0, Piece(1))
-        >>> b.get_piece(0, 0).id
+        >>> b.set_piece(0,0, 1)
+        >>> b.get_piece(0, 0)
         1
         """
         return self.grid[row][col].piece
@@ -123,15 +123,15 @@ class Board:
         >>> b = Board(4,4)
         >>> len(b.occupied_cells())
         0
-        >>> b.set_piece(0,0, Piece(1))
+        >>> b.set_piece(0,0, 1)
         >>> c = b.occupied_cells()
-        >>> (c[0].row, c[0].col, c[0].piece.id)
+        >>> (c[0].row, c[0].col, c[0].piece)
         (0, 0, 1)
-        >>> b.set_piece(1,1, Piece(2))
+        >>> b.set_piece(1,1, 2)
         >>> c = b.occupied_cells()
         >>> len(c)
         2
-        >>> (c[1].row, c[1].col, c[1].piece.id)
+        >>> (c[1].row, c[1].col, c[1].piece)
         (1, 1, 2)
         
         """
@@ -143,7 +143,7 @@ class Board:
         >>> b = Board(4,4)
         >>> len(b.free_cells())
         16
-        >>> b.set_piece(0,0, Piece(1))
+        >>> b.set_piece(0,0, 1)
         >>> c = b.free_cells()
         >>> len(c)
         15
@@ -167,18 +167,18 @@ class Board:
         12
         
         >>> b = Board(7, 7)
-        >>> b.set_piece(0, 1, Piece(1))
-        >>> b.set_piece(1, 1, Piece(1))
-        >>> b.set_piece(1, 0, Piece(1))
+        >>> b.set_piece(0, 1, 1)
+        >>> b.set_piece(1, 1, 1)
+        >>> b.set_piece(1, 0, 1)
         >>> b.find_path(0, 0, 5, 2)
         []
         
         >>> b = Board(3, 5)
-        >>> b.set_piece(0, 3, Piece(1))
-        >>> b.set_piece(2, 3, Piece(1))
+        >>> b.set_piece(0, 3, 1)
+        >>> b.set_piece(2, 3, 1)
         >>> b.find_path(1, 0, 1, 4)
         [Cell(1, 1), Cell(1, 2), Cell(1, 3), Cell(1, 4)]
-        >>> b.set_piece(1, 3, Piece(1))
+        >>> b.set_piece(1, 3, 1)
         >>> b.find_path(0, 0, 2, 2)
         [Cell(0, 1), Cell(0, 2), Cell(1, 2), Cell(2, 2)]
         >>> b.find_path(0, 0, 2, 4)
@@ -431,15 +431,15 @@ class Cell:
         pieces than n_match
         
         >>> b = Board(7, 7)
-        >>> b.set_piece(1, 1, Piece(1))
-        >>> b.set_piece(1, 2, Piece(1))
-        >>> b.set_piece(1, 3, Piece(1))
-        >>> b.set_piece(1, 4, Piece(1))
+        >>> b.set_piece(1, 1, 1)
+        >>> b.set_piece(1, 2, 1)
+        >>> b.set_piece(1, 3, 1)
+        >>> b.set_piece(1, 4, 1)
         >>> c= b.get_cell(1,4)
         >>> r = c.get_all_directions(b.grid, 4)
         >>> len(r)
         4
-        >>> [c.piece.id for c in r]
+        >>> [c.piece for c in r]
         [1, 1, 1, 1]
         
         """
@@ -479,7 +479,6 @@ class Direction(Enum):
     
 if __name__=='__main__':
     import doctest
-    from piecegenerator import Piece
     doctest.testmod()
     
     
