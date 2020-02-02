@@ -325,7 +325,7 @@ class Helper:
                                 free += 1
                         diff = 4 - same - free
                         if same > diff:
-                            v += math.pow(same - diff + 1, 2)*10 + free
+                            v = max(v, math.pow(same - diff + 1, 2)*10 + free)
                     result[r][c][t] = v
         self.cache = result
 
