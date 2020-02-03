@@ -1,11 +1,23 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """Interactive interface for the game and automatic player agent
+
+Usage:
+    fiver.py [--seed=<n>] [--mode=<m>] [-t | --show-tip]
+    fiver.py (-h | --help | --version)
+    
+Options:
+    -h, --help      Dsiplay help
+    --seed=<n>      Random seed to use
+    --mode=<m>      The playing mode to use [default: normal] 
+    -t, --show-tip  Show playing tip
 """
 
 import shelve
 from datetime import datetime
+import sys
 
+from docopt import docopt
 import pygame
 
 from game import Game, Helper
@@ -27,14 +39,18 @@ COULEUR = [pygame.Color(x) for x in ["#3465a4", "#ef2929", "#c4a000", "#f57900",
 
 class Window:
 
-    def __init__(self):
+    def __init__(self, seed = None, mode=None, show_tip = False):
         pygame.init()
         pygame.font.init()
         #variables
+        if mode:
+            self.mode = mode
+        else:
+            self.mode = Game.Mode.NORMAL
         self.selection = None
-        self.reset()
+        self.reset(seed)
         self.compute_size()
-        
+        self.show_tip = show_tip
 
 
     def compute_size(self):
@@ -46,9 +62,9 @@ class Window:
         self.font_big = pygame.font.SysFont("arial", 70)
 
 
-    def reset(self):
+    def reset(self, seed=None):
         self.game_over = False
-        self.g = Game()
+        self.g = Game(seed = seed, mode = self.mode)
         self.hp = Helper(self.g)
 
 
@@ -116,7 +132,7 @@ class Window:
                     [self.pix(0), self.pix(row)],
                     [self.pix(self.g.n_cols), self.pix(row)])
         
-        if not self.game_over:
+        if not self.game_over and self.show_tip:
             border = round(self.l/25)
             pygame.draw.rect(self.win, 
                              COULEUR[self.proposition[2]], 
@@ -194,14 +210,19 @@ class Window:
     def loop(self):
         clock = pygame.time.Clock()
         while self.loop:
-            self.estimate_best_move()
+            if self.show_tip:
+                self.estimate_best_move()
             self.draw_game()
             self.process_events()
             if not self.game_over and self.g.check_game_over():
                 self.game_over = True
                 with shelve.open('trace.db') as db:
                     ts = datetime.now()
-                    db[str(ts)] = {'trace': self.g.trace, 'size':(7,7), 'mode':'normal', 'score':self.g.score}
+                    db[str(ts)] = {'trace': self.g.trace, 
+                                   'size':(self.g.n_rows,self.g.n_cols), 
+                                   'mode':self.g.mode, 
+                                   'score':self.g.score,
+                                   'seed': self.g.seed}
             # Actualisation de l'affichage
             pygame.display.flip() 
             # 10 fps
@@ -209,7 +230,19 @@ class Window:
         
 
 if __name__=='__main__':
-    w = Window()
+    
+    args = docopt(__doc__)
+    print(args)
+    if args['--seed']:
+        s = int(args['--seed'])
+    else:
+        s = None
+    if args['--mode']:
+        m = args['--mode']
+    else:
+        m = 'normal'
+    t = args['--show-tip']
+    w = Window(seed = s, mode = m, show_tip = t)
     w.loop()
     
     

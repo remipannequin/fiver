@@ -4,7 +4,7 @@
 """
 
 import sys
-import random
+from random import Random, randrange
 from enum import Enum
 import math
 
@@ -43,7 +43,7 @@ class NextPiecesGenerator:
     """Pieces and random pieces generator
     """
 
-    def __init__(self, n_next_pieces, n_types):
+    def __init__(self, rng, n_next_pieces, n_types):
         """Create a new pieces generator.
         
         >>> g = NextPiecesGenerator(3,5)
@@ -55,13 +55,14 @@ class NextPiecesGenerator:
         5
         
         """
+        self.rng = rng
         self.pieces = list()
         self.n_next_pieces = n_next_pieces
         self.n_types = n_types
 
 
     def yield_next_piece (self):
-        return random.randrange (self.n_types)
+        return self.rng.randrange (self.n_types)
 
 
     def yield_next_pieces (self):
@@ -93,7 +94,7 @@ class Game:
                   BoardSize.MEDIUM: ( 9, 9, 7, 3 ),
                   BoardSize.LARGE: ( 20, 15, 7, 7 ) }
 
-    def __init__(self, size = BoardSize.SMALL, mode = Mode.NORMAL):
+    def __init__(self, size = BoardSize.SMALL, mode = Mode.NORMAL, seed=None):
         """Create new instance of a five-or-more game.
         >>> g = Game(BoardSize.SMALL)
         """
@@ -102,19 +103,24 @@ class Game:
         self.n_cols = Game.DIFFICULTY[size][1]
         self.n_types = Game.DIFFICULTY[size][2]
         self.n_next_pieces = Game.DIFFICULTY[size][3]
-        self.seed = random.randrange(sys.maxsize)
-        random.seed(self.seed)
+        if seed:
+            self.seed = seed
+        else:
+            self.seed = randrange(sys.maxsize)
+        self.rng = Random(self.seed)
         self.n_cells = self.n_rows * self.n_cols
         self.n_filled_cells = 0
         self.score = 0
         self.next_pieces_queue = []
         #if normal mode:
         if self.mode == Mode.NORMAL:
-            self.next_pieces_generator = NextPiecesGenerator (self.n_next_pieces,
+            self.next_pieces_generator = NextPiecesGenerator (self.rng,
+                                                              self.n_next_pieces,
                                                               self.n_types)
         elif self.mode == Mode.DISTANCE:
             #if distance mode:
-            self.next_pieces_generator = NextPiecesGenerator (2,
+            self.next_pieces_generator = NextPiecesGenerator (self.rng,
+                                                              2,
                                                               self.n_types)
         self.drop_delay = 0
         self.generate_next_pieces ()
@@ -128,14 +134,14 @@ class Game:
     def generate_next_pieces(self):
         self.next_pieces_queue = self.next_pieces_generator.yield_next_pieces ()
         #TODO: use probablity law
-        self.drop_delay = random.randint(0, 3)
+        self.drop_delay = self.rng.randint(0, 3)
 
 
     def init_board(self, n):
         """Put n random pieces on the board"""
         for i in range(n):
             p = self.next_pieces_generator.yield_next_piece()
-            c = random.choice(self.board.free_cells())
+            c = self.rng.choice(self.board.free_cells())
             self.board.set_piece (c.row, c.col, p)
             self.n_filled_cells += 1
 
@@ -151,7 +157,7 @@ class Game:
         for piece in self.next_pieces_queue:
             if self.check_game_over ():
                 return
-            c = random.choice(self.board.free_cells())
+            c = self.rng.choice(self.board.free_cells())
             self.board.set_piece (c.row, c.col, piece)
 
             inactivate = self.board.get_cell (c.row, c.col).get_all_directions (self.board.grid, Game.N_MATCH)
@@ -178,8 +184,12 @@ class Game:
 
     def next_step (self, just_scored = False):
         self.record_trace()
-        if not just_scored:
-            self.fill_board ()
+        if just_scored:
+            if self.mode == Mode.NORMAL:
+                return
+            elif self.mode == Mode.DISTANCE:
+                self.drop_delay +=2
+        self.fill_board ()
 
 
     def make_move (self, start_row, start_col, end_row, end_col):

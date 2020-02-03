@@ -4,7 +4,12 @@
 """
 
 import shelve
+from datetime import datetime
 
 with shelve.open('trace.db') as db:
     for k in db.keys():
-        print("%s (score %d)" % (k,  db[k]['score']))
+        #date = datetime(k)
+        d = db[k]
+        print("%s\t%s\t%s\t%d moves\t%s " % (k,  d['score'], d['seed'], len(d['trace']), d['mode']))
+        
+        
