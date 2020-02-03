@@ -7,7 +7,7 @@ Usage:
     fiver.py (-h | --help | --version)
     
 Options:
-    -h, --help      Dsiplay help
+    -h, --help      Display help
     --seed=<n>      Random seed to use
     --mode=<m>      The playing mode to use [default: normal] 
     -t, --show-tip  Show playing tip
