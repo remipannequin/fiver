@@ -177,6 +177,10 @@ class Window:
                                 print("No path to move here.")
                             else:
                                 self.g.make_move(self.selection[0], self.selection[1], row, col)
+                                
+                                
+                                
+                                
                                 #Rebuild cache only if game change
                                 self.hp.build_eval_cache()
                         self.selection = None

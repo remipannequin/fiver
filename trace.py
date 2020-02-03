@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""see what is in the trace db
+"""see what is in the trace database
 """
 
 import shelve
