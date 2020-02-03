@@ -34,6 +34,11 @@ class StatusMessage(Enum):
     NONE = 4
 
 
+class Mode:
+    NORMAL = "normal"
+    DISTANCE = "distance"
+
+
 class NextPiecesGenerator:
     """Pieces and random pieces generator
     """
@@ -88,10 +93,11 @@ class Game:
                   BoardSize.MEDIUM: ( 9, 9, 7, 3 ),
                   BoardSize.LARGE: ( 20, 15, 7, 7 ) }
 
-    def __init__(self, size = BoardSize.SMALL):
+    def __init__(self, size = BoardSize.SMALL, mode = Mode.NORMAL):
         """Create new instance of a five-or-more game.
         >>> g = Game(BoardSize.SMALL)
         """
+        self.mode = mode
         self.n_rows = Game.DIFFICULTY[size][0]
         self.n_cols = Game.DIFFICULTY[size][1]
         self.n_types = Game.DIFFICULTY[size][2]
@@ -103,11 +109,13 @@ class Game:
         self.score = 0
         self.next_pieces_queue = []
         #if normal mode:
-        #self.next_pieces_generator = NextPiecesGenerator (self.n_next_pieces,
-        #                                                  self.n_types)
-        #if distance mode:
-        self.next_pieces_generator = NextPiecesGenerator (2,
-                                                          self.n_types)
+        if self.mode == Mode.NORMAL:
+            self.next_pieces_generator = NextPiecesGenerator (self.n_next_pieces,
+                                                              self.n_types)
+        elif self.mode == Mode.DISTANCE:
+            #if distance mode:
+            self.next_pieces_generator = NextPiecesGenerator (2,
+                                                              self.n_types)
         self.drop_delay = 0
         self.generate_next_pieces ()
         self.board = Board (self.n_rows, self.n_cols)
@@ -136,8 +144,8 @@ class Game:
         """remove complete lines, and add next_pieces on the board.
         """
         #in distance mode, only drop if delay is zero
-        print("delay:%d"%self.drop_delay)
-        if self.drop_delay > 0:
+
+        if self.mode == Mode.DISTANCE and self.drop_delay > 0:
             return
         
         for piece in self.next_pieces_queue:
@@ -199,8 +207,7 @@ class Game:
         self.last_move = (start_row, start_col, end_row, end_col)
         
         #evaluate which event (get to destination vs drop) will happen first
-        print("path:%d, delay:%d" % (len(path), self.drop_delay))
-        if len(path) > self.drop_delay:
+        if self.mode == Mode.DISTANCE and len(path) > self.drop_delay:
             #drop happen first: move to path[self.drop_delay] , then do drop
             #and continue move if new path is not longer
             n_moves = self.drop_delay
@@ -237,7 +244,6 @@ class Game:
                                      col,
                                      end_row,
                                      end_col)
-            print("move not finished (%d, %d, %d)" % (len(new_path), n_moves, len(path)))
             if len(new_path) + n_moves <= len(path):
                 self.make_move(row, col, end_row, end_col)
 
