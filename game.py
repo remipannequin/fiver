@@ -3,11 +3,11 @@
 """The main game logic for the five-or-more game
 """
 
-from random import randrange, choice
+import sys
+from random import Random, randrange
 from enum import Enum
 import math
 
-from piecegenerator import NextPiecesGenerator
 from board import Board, Direction
 
 __author__="Rémi Pannequin"
@@ -34,6 +34,57 @@ class StatusMessage(Enum):
     NONE = 4
 
 
+class Mode:
+    NORMAL = "normal"
+    DISTANCE = "distance"
+
+
+class NextPiecesGenerator:
+    """Pieces and random pieces generator
+    """
+
+    def __init__(self, rng, n_next_pieces, n_types):
+        """Create a new pieces generator.
+        
+        >>> g = NextPiecesGenerator(3,5)
+        >>> g.pieces
+        []
+        >>> g.n_next_pieces
+        3
+        >>> g.n_types
+        5
+        
+        """
+        self.rng = rng
+        self.pieces = list()
+        self.n_next_pieces = n_next_pieces
+        self.n_types = n_types
+
+
+    def yield_next_piece (self):
+        return self.rng.randrange (self.n_types)
+
+
+    def yield_next_pieces (self):
+        """add n_next_pieces to the queue
+        
+        >>> g = NextPiecesGenerator(3,5)
+        >>> l = g.yield_next_pieces()
+        >>> len(g.pieces)
+        3
+        >>> l[0] == g.pieces[0] and l[1] == g.pieces[1] and l[2] == g.pieces[2]
+        True
+        >>> [p >= 0 and p < 5 for p in g.pieces]
+        [True, True, True]
+        """
+        self.pieces.clear ()
+        for i in range(self.n_next_pieces):
+            id = self.yield_next_piece ()
+            self.pieces.append(id)
+        return self.pieces
+
+
+
 class Game:
 
     N_TYPES = 7
@@ -43,41 +94,70 @@ class Game:
                   BoardSize.MEDIUM: ( 9, 9, 7, 3 ),
                   BoardSize.LARGE: ( 20, 15, 7, 7 ) }
 
-    def __init__(self, size = BoardSize.SMALL):
+    def __init__(self, size = BoardSize.SMALL, mode = Mode.NORMAL, seed=None):
         """Create new instance of a five-or-more game.
-        
         >>> g = Game(BoardSize.SMALL)
-        
-        
-        
         """
+        self.mode = mode
         self.n_rows = Game.DIFFICULTY[size][0]
         self.n_cols = Game.DIFFICULTY[size][1]
         self.n_types = Game.DIFFICULTY[size][2]
         self.n_next_pieces = Game.DIFFICULTY[size][3]
-
+        if seed:
+            self.seed = seed
+        else:
+            self.seed = randrange(sys.maxsize)
+        self.rng = Random(self.seed)
         self.n_cells = self.n_rows * self.n_cols
         self.n_filled_cells = 0
         self.score = 0
-        self.status_message = StatusMessage.DESCRIPTION
         self.next_pieces_queue = []
-        self.next_pieces_generator = NextPiecesGenerator (self.n_next_pieces,
-                                                          self.n_types)
+        #if normal mode:
+        if self.mode == Mode.NORMAL:
+            self.next_pieces_generator = NextPiecesGenerator (self.rng,
+                                                              self.n_next_pieces,
+                                                              self.n_types)
+        elif self.mode == Mode.DISTANCE:
+            #if distance mode:
+            self.next_pieces_generator = NextPiecesGenerator (self.rng,
+                                                              2,
+                                                              self.n_types)
+        self.drop_delay = 0
         self.generate_next_pieces ()
         self.board = Board (self.n_rows, self.n_cols)
-        self.fill_board ()
-        self.generate_next_pieces ()
-        
+        self.init_board (3)
+        self.trace = []
+        self.last_move = None
+        self.record_trace()
+
 
     def generate_next_pieces(self):
         self.next_pieces_queue = self.next_pieces_generator.yield_next_pieces ()
+        #TODO: use probablity law
+        self.drop_delay = self.rng.randint(0, 3)
+
+
+    def init_board(self, n):
+        """Put n random pieces on the board"""
+        for i in range(n):
+            p = self.next_pieces_generator.yield_next_piece()
+            c = self.rng.choice(self.board.free_cells())
+            self.board.set_piece (c.row, c.col, p)
+            self.n_filled_cells += 1
 
 
     def fill_board (self):
         """remove complete lines, and add next_pieces on the board.
         """
+        #in distance mode, only drop if delay is zero
+
+        if self.mode == Mode.DISTANCE and self.drop_delay > 0:
+            return
+        
         for piece in self.next_pieces_queue:
-            c = choice(self.board.free_cells())
+            if self.check_game_over ():
+                return
+            c = self.rng.choice(self.board.free_cells())
             self.board.set_piece (c.row, c.col, piece)
 
             inactivate = self.board.get_cell (c.row, c.col).get_all_directions (self.board.grid, Game.N_MATCH)
@@ -86,12 +166,10 @@ class Game:
                 for cell in inactivate:
                     self.board.set_piece (cell.row, cell.col, None)
                 self.update_score (len(inactivate))
-
             self.n_filled_cells += 1
-
-            if self.check_game_over ():
-                self.status_message = StatusMessage.GAME_OVER
-                return
+            
+        #generate new pieces to replace the ones we just put on the board
+        self.generate_next_pieces ()
 
 
     def update_score (self, n_matched):
@@ -104,34 +182,89 @@ class Game:
         return False
 
 
-    def next_step (self):
+    def next_step (self, just_scored = False):
+        self.record_trace()
+        if just_scored:
+            if self.mode == Mode.NORMAL:
+                return
+            elif self.mode == Mode.DISTANCE:
+                self.drop_delay +=2
         self.fill_board ()
-        self.generate_next_pieces ()
 
 
     def make_move (self, start_row, start_col, end_row, end_col):
-        #current_path = self.board.find_path (start_row,
-        #                                     start_col,
-        #                                     end_row,
-        #                                     end_col)
-
-        #if current_path is None or len(current_path) == 0:
-        #    status_message = NO_PATH
-        #    return false
+        """Make a move on the board.
         
+        return True if the move could be completed, False otherwise
+        
+        In normal mode, after the move is performed, the content of the
+        next pieces queue is randomly added on the board.
+        
+        In distance mode, this method returns either if the move is finished, 
+        or if a new piece is added on the board.
+        
+        """
+        path = self.board.find_path (start_row,
+                                     start_col,
+                                     end_row,
+                                     end_col)
+
+        if path is None or len(path) == 0:
+            #move is impossible, don't do it
+            return
+        
+        #record move
+        self.last_move = (start_row, start_col, end_row, end_col)
+        
+        #evaluate which event (get to destination vs drop) will happen first
+        if self.mode == Mode.DISTANCE and len(path) > self.drop_delay:
+            #drop happen first: move to path[self.drop_delay] , then do drop
+            #and continue move if new path is not longer
+            n_moves = self.drop_delay
+            dst = path[n_moves]
+            row = dst.row
+            col = dst.col
+            self.drop_delay = 0
+            finished = False
+        else:
+            #move can be done
+            self.drop_delay -= (len(path))
+            (row, col) = (end_row, end_col)
+            finished = True
+        
+        #move to (row, col)
         p = self.board.get_piece(start_row, start_col)
         self.board.set_piece (start_row, start_col, None)
-        self.board.set_piece (end_row, end_col, p)
-        inactivate = self.board.get_cell (end_row, end_col).get_all_directions (self.board.grid, Game.N_MATCH)
+        self.board.set_piece (row, col, p)
+        
+        #execute board logic at (row, col)
+        inactivate = self.board.get_cell (row, col).get_all_directions (self.board.grid, Game.N_MATCH)
         if len(inactivate) > 0:
             self.n_filled_cells -= len(inactivate)
             for cell in inactivate:
                 self.board.set_piece (cell.row, cell.col, None)
             self.update_score (len(inactivate))
-        else:
-            self.next_step()
+        
+        #proceed to fill board
+        self.next_step(len(inactivate) > 0)
+        
+        #if not finished, evaluate new path
+        if not finished: #todo check piece still exists
+            new_path = self.board.find_path (row,
+                                     col,
+                                     end_row,
+                                     end_col)
+            if len(new_path) + n_moves <= len(path):
+                self.make_move(row, col, end_row, end_col)
 
 
+    def record_trace(self):
+        """Add current state (board, next_pieces, move, score) to the trace"""
+        
+        board_data = [c.piece for c in self.board.all_cells()]
+        self.trace.append((board_data, self.next_pieces_queue, self.last_move, self.score))
+    
+        
 class Helper:
 
     def __init__(self, game):
@@ -166,6 +299,7 @@ class Helper:
         """
         self.board = game.board
         self.n_types = game.n_types
+        self.cache = None
         result = list()
         #prepare evalutation neighbourhood
         for r in range(game.n_rows):
@@ -209,8 +343,8 @@ class Helper:
         possible source cells
         
         >>> g = MockGame(3,5)
-        >>> g.board.set_piece(0, 2, Piece(1))
-        >>> g.board.set_piece(1, 2, Piece(2))
+        >>> g.board.set_piece(0, 2, 1)
+        >>> g.board.set_piece(1, 2, 2)
         >>> hp = Helper(g)
         >>> act = hp.actions()
         >>> len(act)
@@ -223,9 +357,9 @@ class Helper:
         True
         >>> g.board.get_cell(1,2) in act[g.board.get_cell(0,0)]
         True
-        >>> g.board.set_piece(0, 3, Piece(3))
-        >>> g.board.set_piece(2, 2, Piece(3))
-        >>> g.board.set_piece(2, 3, Piece(2))
+        >>> g.board.set_piece(0, 3, 3)
+        >>> g.board.set_piece(2, 2, 3)
+        >>> g.board.set_piece(2, 3, 2)
         >>> act = hp.actions()
         >>> len(act)
         10
@@ -291,7 +425,7 @@ class Helper:
         
         >>> g = MockGame()
         >>> hp = Helper(g)
-        >>> g.board.set_piece(0, 0, Piece(1))
+        >>> g.board.set_piece(0, 0, 1)
         >>> g.board.print()
         |1| | | | | | |
         | | | | | | | |
@@ -319,13 +453,13 @@ class Helper:
                         free = 0
                         for cell in mask:
                             if cell.piece:
-                                if cell.piece.id == t:
+                                if cell.piece == t:
                                     same += 1
                             else:
                                 free += 1
                         diff = 4 - same - free
                         if same > diff:
-                            v += math.pow(same - diff + 1, 2)*10 + free
+                            v = max(v, math.pow(same - diff + 1, 2)*10 + free)
                     result[r][c][t] = v
         self.cache = result
 
@@ -336,7 +470,7 @@ class Helper:
         """
         if (self.cache is None):
             self.build_eval_cache()
-        return self.cache[to_row][to_col][piece.id]
+        return self.cache[to_row][to_col][piece]
 
 
     def reachable_cells(self, from_row, from_col):
@@ -354,7 +488,6 @@ class Helper:
 
 if __name__=='__main__':
     import doctest
-    from piecegenerator import Piece
     class MockGame():
         def __init__(self, n_rows=7, n_cols=7):
             self.n_types = 5
